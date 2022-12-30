@@ -29,8 +29,11 @@ class Scraper:
         if isinstance(years, str):
             years = [years]
         for year in years:
-            df = self.scrape_rider_year(year)
-            df.to_parquet(f"../data/{self.name}/{year}.parquet")
+            race_df, stage_df = self.scrape_rider_year(year)
+            if len(race_df) > 0:
+                race_df.to_parquet(f"../data/{self.name}/{year}_races.parquet")
+            if len(stage_df) > 0:
+                stage_df.to_parquet(f"../data/{self.name}/{year}_stage_races.parquet")
 
     def get_rider_homepage_stats(self) -> pd.DataFrame:
         rider_dict = {}
@@ -85,14 +88,40 @@ class Scraper:
 
         return race_info
 
+    @staticmethod
+    def scrape_stage_race_info(url: str) -> dict:
+        race_info = {}
+        soup = get_soup(url)
+        infos = soup.find("ul", {"class": "infolist"}).find_all("li")
+        for i in range(len(infos) - 1):
+            k, v = infos[i].text.split(":", 1)
+            k, v = string_fmt(k), string_fmt(v)
+            if v != "" and k in [
+                "race_category",
+                "race_ranking",
+                "startlist_quality_score",
+            ]:
+                race_info[k] = v
+
+        return race_info
+
     def parse_race(self, race) -> dict:
         race_dict = {}
         race_url = f"https://www.procyclingstats.com/{self.find_race_url(str(race[4]))}"
-        race_dict["result"] = {'result': race[1].text}
+        race_dict["result"] = race[1].text
         race_dict["name"] = string_fmt(race[4].text)
         race_dict["distance"] = race[5].text
         race_dict["race_url"] = race_url
         race_dict.update(self.scrape_race_info(race_url))
+        return race_dict
+
+    def parse_stage_race(self, race) -> dict:
+        race_dict = {}
+        race_url = f"https://www.procyclingstats.com/{self.find_race_url(str(race[4]))}"
+        race_dict["result"] = None
+        race_dict["name"] = string_fmt(race[4].text)
+        race_dict["race_url"] = race_url
+        race_dict.update(self.scrape_stage_race_info(race_url))
         return race_dict
 
     @staticmethod
@@ -112,23 +141,30 @@ class Scraper:
             for race in races
             if match in race.find("a")["href"] and race.find_all("td")[0].text == ""
         ]
-        info = {}
+        info = {"finished": True if race_results else False}
+        if not race_results:
+            return info
+
         for result in race_results:
             result = result.find_all("td")
             info[string_fmt(result[4].text)] = result[1].text
         return info
 
-    def scrape_rider_year(self, year: str) -> pd.DataFrame:
+    def scrape_rider_year(self, year: str) -> tuple[pd.DataFrame, pd.DataFrame]:
         soup = get_soup(f"https://www.procyclingstats.com/rider/{self.name}/{year}")
         races = soup.find("tbody").find_all("tr")
-        year_dict = {}
+        year_race_dict = {}
+        year_stage_dict = {}
         for race in races:
             race = race.find_all("td")
             if self.is_race(race):
-                year_dict[string_fmt(race[4].text)] = self.parse_race(race)
+                year_race_dict[string_fmt(race[4].text)] = self.parse_race(race)
             elif self.is_stage_race(race):
-                race_info = self.parse_race(race)
-                race_info["result"] = self.get_stage_jersey_results(races, race_info)
-                year_dict[string_fmt(race[4].text)] = race_info
+                race_info = self.parse_stage_race(race)
+                stage_race_results = self.get_stage_jersey_results(races, race_info)
+                race_info["result"] = stage_race_results
+                year_stage_dict[string_fmt(race[4].text)] = race_info
 
-        return pd.DataFrame.from_dict(year_dict, orient="index")
+        return pd.DataFrame.from_dict(
+            year_race_dict, orient="index"
+        ), pd.DataFrame.from_dict(year_stage_dict, orient="index")
