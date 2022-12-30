@@ -6,7 +6,6 @@ import re
 from utils import string_fmt, title_fmt, get_soup
 
 
-
 class Scraper:
     def __init__(self, rider_url: str):
         """class to scrape rider data from procyclingstats.com
@@ -18,11 +17,9 @@ class Scraper:
         self.name = rider_url.split("/")[-1]
         self.create_storage_folder()
 
-
     def create_storage_folder(self):
         if not os.path.exists(f"../data/{self.name}"):
             os.makedirs(f"../data/{self.name}")
-            
 
     def scrape_homepage_to_parquet(self):
         df = self.get_rider_homepage_stats()
@@ -34,7 +31,6 @@ class Scraper:
         for year in years:
             df = self.scrape_rider_year(year)
             df.to_parquet(f"../data/{self.name}/{year}.parquet")
-        
 
     def get_rider_homepage_stats(self) -> pd.DataFrame:
         rider_dict = {}
@@ -54,8 +50,8 @@ class Scraper:
         rider_dict["height"] = float(info.find(text="Height:").next.split()[0])
         rider_dict["weight"] = float(info.find(text="Weight:").next.split()[0])
 
-        points = soup.find_all("div", {"class": "pnt"}) 
-        ranks = soup.find_all("div", {"class": "rnk"})  
+        points = soup.find_all("div", {"class": "pnt"})
+        ranks = soup.find_all("div", {"class": "rnk"})
         titles_pnts = soup.find_all("div", {"class": "title"})[0 : len(points)]
         titles_ranks = soup.find_all("div", {"class": "title"})[
             len(points) : len(points) + len(ranks)
@@ -77,7 +73,7 @@ class Scraper:
         if match:
             return match.group(1)
 
-    @staticmethod   
+    @staticmethod
     def scrape_race_info(url: str) -> dict:
         race_info = {}
         soup = get_soup(url)
@@ -89,23 +85,38 @@ class Scraper:
 
         return race_info
 
-    def parse_one_day_race(self, race, race_name) -> dict:
+    def parse_race(self, race) -> dict:
         race_dict = {}
         race_url = f"https://www.procyclingstats.com/{self.find_race_url(str(race[4]))}"
         race_dict["result"] = race[1].text
         race_dict["name"] = string_fmt(race[4].text)
         race_dict["distance"] = race[5].text
-        race_dict["is_stage"] = race_name.startswith("stage_")
         race_dict["race_url"] = race_url
         race_dict.update(self.scrape_race_info(race_url))
         return race_dict
 
     @staticmethod
     def is_race(race):
-        """races do not have a date, thus we can use regex to check if date is 28.09, for example"""
-        pattern = r"^\d{2}\.\d{2}$"
-        return re.match(pattern, race[0].text) is not None
+        """stagae races do not have a date of one day, thus we can use regex to check if date is 28.09, for example"""
+        return re.match(r"^\d{2}\.\d{2}$", race[0].text) is not None
 
+    @staticmethod
+    def is_stage_race(race):
+        return re.match(r"\d{2}\.\d{2} \» \d{2}\.\d{2}", race[0].text) is not None
+
+    def get_stage_jersey_results(self, races, race_info: dict) -> dict:
+        pattern = re.compile(r"race/.+/\d{4}")
+        match = pattern.findall(race_info.get("race_url"))[0]
+        race_results = [
+            race
+            for race in races
+            if match in race.find("a")["href"] and race.find_all("td")[0].text == ""
+        ]
+        info = {}
+        for result in race_results:
+            result = result.find_all("td")
+            info[string_fmt(result[4].text)] = result[1].text
+        return info
 
     def scrape_rider_year(self, year: str) -> pd.DataFrame:
         soup = get_soup(f"https://www.procyclingstats.com/rider/{self.name}/{year}")
@@ -114,9 +125,10 @@ class Scraper:
         for race in races:
             race = race.find_all("td")
             if self.is_race(race):
-                race_name = string_fmt(race[4].text)
-                year_dict[race_name] = self.parse_one_day_race(race, race_name)
+                year_dict[string_fmt(race[4].text)] = self.parse_race(race)
+            elif self.is_stage_race(race):
+                race_info = self.parse_race(race)
+                race_info['result'] = self.get_stage_jersey_results(races, race_info)
+                year_dict[string_fmt(race[4].text)] = race_info
 
-        return pd.DataFrame.from_dict(year_dict, orient= 'index')
-
-
+        return pd.DataFrame.from_dict(year_dict, orient="index")
