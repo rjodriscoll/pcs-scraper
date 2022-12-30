@@ -88,7 +88,7 @@ class Scraper:
     def parse_race(self, race) -> dict:
         race_dict = {}
         race_url = f"https://www.procyclingstats.com/{self.find_race_url(str(race[4]))}"
-        race_dict["result"] = race[1].text
+        race_dict["result"] = {'result': race[1].text}
         race_dict["name"] = string_fmt(race[4].text)
         race_dict["distance"] = race[5].text
         race_dict["race_url"] = race_url
@@ -128,7 +128,7 @@ class Scraper:
                 year_dict[string_fmt(race[4].text)] = self.parse_race(race)
             elif self.is_stage_race(race):
                 race_info = self.parse_race(race)
-                race_info['result'] = self.get_stage_jersey_results(races, race_info)
+                race_info["result"] = self.get_stage_jersey_results(races, race_info)
                 year_dict[string_fmt(race[4].text)] = race_info
 
         return pd.DataFrame.from_dict(year_dict, orient="index")
