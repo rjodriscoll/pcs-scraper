@@ -6,6 +6,7 @@ The tool scrapes all the rider stats and all their race placings.
 
 # setup 
 
+COMING SOON!
 Install the necessary dependencies by running pip install -r requirements.txt.
 
 ### How to use the cli tool 
