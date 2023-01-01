@@ -2,38 +2,43 @@ import pandas as pd
 import datetime as dt
 import os
 import re
-
 from utils import string_fmt, title_fmt, get_soup
 
 
 class Scraper:
-    def __init__(self, rider_url: str):
+    def __init__(self, rider_url: str, output_location: str = "../data"):
         """class to scrape rider data from procyclingstats.com
 
         Args:
             rider_url (str): base url of the rider. e.g. https://www.procyclingstats.com/rider/geraint-thomas
+            output_location (str): where scraped files go
         """
         self.url = rider_url
         self.name = rider_url.split("/")[-1]
+        self.output_location = output_location
         self.create_storage_folder()
 
     def create_storage_folder(self):
-        if not os.path.exists(f"../data/{self.name}"):
-            os.makedirs(f"../data/{self.name}")
+        if not os.path.exists(f"{self.output_location}/{self.name}"):
+            os.makedirs(f"{self.output_location}/{self.name}")
 
-    def scrape_homepage_to_parquet(self):
+    def scrape_homepage(self):
         df = self.get_rider_homepage_stats()
-        df.to_parquet(f"../data/{self.name}/stats.parquet")
+        df.to_parquet(f"{self.output_location}/{self.name}/stats.parquet")
 
-    def scrape_year_to_parquet(self, years: str | list[str]):
+    def scrape_year(self, years: str | list[str]):
         if isinstance(years, str):
             years = [years]
         for year in years:
             race_df, stage_df = self.scrape_rider_year(year)
             if len(race_df) > 0:
-                race_df.to_parquet(f"../data/{self.name}/{year}_races.parquet")
+                race_df.to_parquet(
+                    f"{self.output_location}/{self.name}/{year}_races.parquet"
+                )
             if len(stage_df) > 0:
-                stage_df.to_parquet(f"../data/{self.name}/{year}_stage_races.parquet")
+                stage_df.to_parquet(
+                    f"{self.output_location}/{self.name}/{year}_stage_races.parquet"
+                )
 
     def get_rider_homepage_stats(self) -> pd.DataFrame:
         rider_dict = {}
