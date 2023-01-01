@@ -19,7 +19,7 @@ Once cloned, navigate to the root directory and run:
 
  Run the scraper using the following command (from the pcs_scrape folder):
 
- ```python3 cli.py [--riders RIDERS] [--teams TEAMS] YEARS [YEARS ...] ```
+ ```python3 cli.py [--riders RIDERS] [--teams TEAMS] [YEARS ...] ```
 
 Where RIDERS is the name of one or more riders to scrape data for (separated by spaces), TEAMS is the name of one or more teams to scrape data for (separated by spaces), and YEARS is one or more years to scrape data for (separated by spaces).
 
