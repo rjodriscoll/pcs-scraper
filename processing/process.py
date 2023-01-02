@@ -81,8 +81,31 @@ def calculate_best_result_this_year(df: pd.DataFrame) -> pd.Series:
     return data.apply(_get_best, axis=1)
 
 
-def calculate_performance_similar_profile():
-    pass
+def calculate_performance_similar_races(df):
+    data = df.copy()
+
+    def _get_similar_results(data):
+        df_num = df[(df.date < data.date)]
+
+        if len(df_num) > 5:
+            # if we have 5 data points we find the best results from the most similar races they've done.
+            # this will get better as they've done more races
+            df_num["delta_sum"] = np.cbrt(
+                float(
+                    abs(df_num["profilescore"] - data["profilescore"]) ** 2
+                    + abs(df_num["distance"] - data["distance"]) ** 2
+                    + abs(
+                        df_num["startlist_quality_score"]
+                        - data["startlist_quality_score"]
+                    )
+                    ** 2
+                )
+            )
+            df_num = df_num.sort_values("delta_sum", ascending=True)[1:6]
+            return df_num.result.min()
+        return np.nan
+
+    return data.apply(_get_similar_results, axis=1)
 
 
 def add_rider_details():
