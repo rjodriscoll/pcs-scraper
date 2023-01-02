@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+from scipy.spatial.distance import euclidean
 
 def parse_date(column: pd.Series) -> pd.Series:
     return pd.to_datetime(column, format="%d_%B_%Y")
@@ -85,21 +85,13 @@ def calculate_performance_similar_races(df):
     data = df.copy()
 
     def _get_similar_results(data):
-        df_num = df[(df.date < data.date)]
+        df_num = df[(df.date < data.date)].copy()
 
         if len(df_num) > 5:
             # if we have 5 data points we find the best results from the most similar races they've done.
             # this will get better as they've done more races
-            df_num["delta_sum"] = np.cbrt(
-                float(
-                    abs(df_num["profilescore"] - data["profilescore"]) ** 2
-                    + abs(df_num["distance"] - data["distance"]) ** 2
-                    + abs(
-                        df_num["startlist_quality_score"]
-                        - data["startlist_quality_score"]
-                    )
-                    ** 2
-                )
+            df_num["delta_sum"] = df_num.apply(
+                lambda row: euclidean(row, data), axis=1
             )
             df_num = df_num.sort_values("delta_sum", ascending=True)[1:6]
             return df_num.result.min()

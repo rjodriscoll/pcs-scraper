@@ -12,6 +12,7 @@ setup(
         "lxml", 
         "tqdm", 
         "pandas",
-        "pyarrow"
+        "pyarrow",
+        "scipy",
     ],
 )
