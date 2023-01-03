@@ -1,7 +1,7 @@
 import argparse
 from tqdm import tqdm
 from scrape import Scraper
-from utils import get_team_riders
+from utils import get_team_riders, get_riders_from_start_list
 import warnings
 
 parser = argparse.ArgumentParser()
@@ -12,6 +12,11 @@ parser.add_argument(
 parser.add_argument(
     "--teams", nargs="?", help="Name(s) of the teams(s) e.g. uae-team-emirates-2022"
 )
+parser.add_argument(
+    "--startlist",
+    nargs="?",
+    help="url of a startlist for a race e.g. https://www.procyclingstats.com/race/tour-down-under/2023/startlist",
+)
 
 parser.add_argument("years", nargs="+", help="Year(s) to scrape")
 
@@ -19,15 +24,17 @@ args = parser.parse_args()
 
 years = args.years
 riders = [args.riders] if args.riders else []
-output_fmt = 'parquet' if not args.output_format else args.output_format
 if args.teams:
     for team in args.teams:
         riders.extend(get_team_riders(team))
 
+if args.startlist:
+    riders.extend(get_riders_from_start_list(args.startlist))
+
 with tqdm(total=len(riders) * len(years), desc="Scraping data") as pbar:
-    for rider in riders:
-        for year in years:
-            print("Scraping data for rider: " + rider)
+    for rider in set(riders):
+        for year in set(years):
+            print("Scraping data for rider: " + rider + " " + year)
 
             s = Scraper(rider_url=f"https://www.procyclingstats.com/rider/{str(rider)}")
             try:
