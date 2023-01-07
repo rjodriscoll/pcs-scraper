@@ -103,7 +103,9 @@ class Processor:
     @staticmethod
     def _calculate_time_since_last_race(df: pd.DataFrame) -> pd.Series:
         df = df.sort_values("date", ascending=True)
-        return df["date"] - df["date"].shift(1)
+        ser= df["date"] - df["date"].shift(1)
+        return ser.dt.days
+
 
     @staticmethod
     def _calculate_racedays_this_year(df: pd.DataFrame) -> pd.Series:
@@ -152,10 +154,10 @@ class Processor:
                     lambda row: euclidean(row[cols].values, data[cols].values), axis=1
                 )
                 df_num = df_num.sort_values("delta_sum", ascending=True)[1:6]
-                return df_num.delta_sum.min()
+                return df_num.result.min()
             return np.nan
 
-        return df.apply(_get_similar_results, axis=1)
+        return data.apply(_get_similar_results, axis=1)
 
     def _add_rider_details(self, df: pd.DataFrame) -> pd.DataFrame:
         stats = self.stats_df.reindex(
@@ -209,4 +211,5 @@ class Processor:
         self.run_parsers()
         self.run_feature_extract()
         self.race_df.to_csv(self.rider_path + 'processed_race_data.csv', index=False)
+
 
