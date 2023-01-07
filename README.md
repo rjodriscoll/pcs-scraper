@@ -8,32 +8,44 @@ The tool scrapes all the rider stats and all their race placings.
 
 In order to use the package, you must clone the respository with: 
 
-```git clone https://github.com/rjodriscoll/pcs-scraper.git```
+```bash
+git clone https://github.com/rjodriscoll/pcs-scraper.git
+```
 
 Once cloned, navigate to the root directory and run: 
 
-```python3 setup.py install```
+```bash
+python3 setup.py install
+```
 
 
 ### How to use the cli tool 
 
  Run the scraper using the following command (from the pcs_scrape folder):
 
- ```python3 cli.py [--riders RIDERS] [--teams TEAMS] [--startlist STARTLIST] [YEARS ...] ```
+ ```bash
+ python3 cli.py [--riders RIDERS] [--teams TEAMS] [--startlist STARTLIST] [YEARS ...] 
+ ```
 
 Where RIDERS is the name of one or more riders to scrape data for (separated by spaces), TEAMS is the name of one or more teams to scrape data for (separated by spaces), and YEARS is one or more years to scrape data for (separated by spaces).
 
 For example, to scrape data for Geraint Thomas for the years 2020 and 2021, you would run:
 
- ```python3 cli.py --riders geraint-thomas 2020 2021 ```
+ ```bash
+ python3 cli.py --riders geraint-thomas 2020 2021 
+ ```
 
 To scrape data for the Team Ineos riders in 2022 for the years 2020 and 2021, you would run:
 
-```python3 cli.py --teams ineos-grenadiers-2022 2020 2021```
+```bash
+python3 cli.py --teams ineos-grenadiers-2022 2020 2021
+```
 
 To scrape data riders starting the TDU 2023, and all their data from 2020 2021 and 2022:
 
-```python3 cli.py --startlist https://www.procyclingstats.com/race/tour-down-under/2023/startlist 2020 2021 2022```
+```bash
+python3 cli.py --startlist https://www.procyclingstats.com/race/tour-down-under/2023/startlist 2020 2021 2022
+```
 
 
 
@@ -41,7 +53,7 @@ To scrape data riders starting the TDU 2023, and all their data from 2020 2021 a
 
 Import the Scraper class by adding from ``from scrape import Scraper`` to the top of your Python script.
 
-Create an instance of the Scraper class by calling ``Scraper(rider_url)``, where rider_url is the base URL of the rider's page on procyclingstats.com. For example, to scrape data for Geraint Thomas, you would use ``s = Scraper('https://www.procyclingstats.com/rider/geraint-thomas')``.
+Create an instance of the Scraper class by calling `` Scraper(rider_url)``, where rider_url is the base URL of the rider's page on procyclingstats.com. For example, to scrape data for Geraint Thomas, you would use ``s = Scraper('https://www.procyclingstats.com/rider/geraint-thomas')``.
 
 Use the ``scrape_homepage()`` method to scrape data from the rider's homepage and save it as a parquet file in the ../data/<name>/ directory, where <name> is the name of the rider.
 
