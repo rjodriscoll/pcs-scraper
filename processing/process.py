@@ -33,15 +33,19 @@ class Processor:
             if file.endswith("stage_races.parquet")
         ]
 
+    @staticmethod
     def _parse_date(column: pd.Series) -> pd.Series:
         return pd.to_datetime(column, format="%d_%B_%Y")
 
+    @staticmethod
     def _parse_distance(column: pd.Series) -> pd.Series:
         return pd.to_numeric(column.str.replace("_km", ""))
 
+    @staticmethod
     def _parse_speed(column: pd.Series) -> pd.Series:
         return pd.to_numeric(column.str.replace("_km/h", ""))
 
+    @staticmethod
     def _parse_stage_number(column: pd.Series) -> pd.Series:
         def _extract_stage(string):
             if string.startswith("stage"):
@@ -51,28 +55,34 @@ class Processor:
 
         return column.apply(_extract_stage)
 
+    @staticmethod
     def _parse_result(column: pd.Series) -> pd.Series:
-        return pd.numeric(column.replace({"DNF": np.nan, "DNS": np.nan}))
+        return pd.to_numeric(
+            column.replace({"DNF": np.nan, "DNS": np.nan}), downcast="integer"
+        )
 
+    @staticmethod
     def _parse_start_time(column: pd.Series) -> pd.Series:
         def _parse_start_time(val):
-            time = pd.to_datetime(val[0:5], format="%Y-%m-%d %H:%M")
-            return time.ti
+            time = pd.to_datetime(val[0:5], format="%H:%M")
+            return time.hour
 
         return column.apply(_parse_start_time)
 
+    @staticmethod
     def _make_cols_numeric(df: pd.DataFrame, columns: list[str]):
         for column in columns:
             df[column] = df[column].apply(pd.to_numeric)
         return df
 
-    def _extract_date_time_to_features(df: pd.DataFrame):
+    def _extract_date_time_to_features(self, df: pd.DataFrame):
         df["day"] = df["date"].dt.day
         df["month"] = df["date"].dt.month
         df["year"] = df["date"].dt.year
-        df["hour"] = df["start_time"].dt.hour
+        df["hour"] = self._parse_start_time(df["start_time"])
         return df
 
+    @staticmethod
     def _parse_winning_method(column: pd.Series) -> pd.Series:
         def _parse_method(event):
             if "solo" in event:
@@ -90,33 +100,35 @@ class Processor:
 
         return column.apply(_parse_method)
 
+    @staticmethod
     def _calculate_time_since_last_race(df: pd.DataFrame) -> pd.Series:
         df = df.sort_values("date", ascending=True)
         return df["date"] - df["date"].shift(1)
 
+    @staticmethod
     def _calculate_racedays_this_year(df: pd.DataFrame) -> pd.Series:
         df = df.sort_values("date", ascending=True)
         data = df.copy()
 
         def _get_days(data):
-            return len(
-                df[(df.date < data.date) & (df.date.dt.year == data.date.dt.year)]
-            )
+            return len(df[(df.date < data.date) & (df.date.dt.year == data.date.year)])
 
         return data.apply(_get_days, axis=1)
 
+    @staticmethod
     def _calculate_profilescore_vert_ratio(
         profile_col: pd.Series, vert_col: pd.Series
     ) -> pd.Series:
+
         return vert_col / profile_col
 
-    def _calculate_best_result_this_year(self, df: pd.DataFrame) -> pd.Series:
-        df["result"] = self._replace_dnf_dns(df["result"])
+    @staticmethod
+    def _calculate_best_result_this_year(df: pd.DataFrame) -> pd.Series:
         data = df.copy()
 
         def _get_best(data):
             return (
-                df[(df.date < data.date) & (df.date.dt.year == data.date.dt.year)][
+                df[(df.date < data.date) & (df.date.dt.year == data.date.year)][
                     "result"
                 ]
                 .apply(pd.to_numeric)
@@ -125,7 +137,8 @@ class Processor:
 
         return data.apply(_get_best, axis=1)
 
-    def _calculate_performance_similar_races(df):
+    @staticmethod
+    def _calculate_performance_similar_races(df: pd.DataFrame) -> pd.Series:
         data = df.copy()
 
         def _get_similar_results(data):
@@ -134,16 +147,17 @@ class Processor:
             if len(df_num) > 5:
                 # if we have 5 data points we find the best results from the most similar races they've done.
                 # this will get better as they've done more races
+                cols = ["distance", "profilescore", "startlist_quality_score"]
                 df_num["delta_sum"] = df_num.apply(
-                    lambda row: euclidean(row, data), axis=1
+                    lambda row: euclidean(row[cols].values, data[cols].values), axis=1
                 )
                 df_num = df_num.sort_values("delta_sum", ascending=True)[1:6]
-                return df_num.result.min()
+                return df_num.delta_sum.min()
             return np.nan
 
-        return data.apply(_get_similar_results, axis=1)
+        return df.apply(_get_similar_results, axis=1)
 
-    def _add_rider_details(self, df: pd.DataFrame):
+    def _add_rider_details(self, df: pd.DataFrame) -> pd.DataFrame:
         stats = self.stats_df.reindex(
             self.stats_df.index.repeat(len(self.race_df))
         ).reset_index()
@@ -152,23 +166,47 @@ class Processor:
 
     def run_parsers(self):
         self.race_df["date"] = self._parse_date(self.race_df["date"])
-        self.race_df["distance"] = self._parse_date(self.race_df["distance"])
-        self.race_df["avg._speed_winner"] = self._parse_date(
+        self.race_df["distance"] = self._parse_distance(self.race_df["distance"])
+        self.race_df["avg._speed_winner"] = self._parse_speed(
             self.race_df["avg._speed_winner"]
         )
         self.race_df["stage_number"] = self._parse_stage_number(self.race_df["name"])
-        self.race_df["start_time"] = self._parse_start_time(self.race_df["start_time"])
         self.race_df["result"] = self._parse_result(self.race_df["result"])
         self.race_df["won_how"] = self._parse_winning_method(self.race_df["won_how"])
         self.race_df = self._make_cols_numeric(
-            self.race_df, ["result", "profilescore", "profilescore", "vert._meters"]
+            self.race_df,
+            [
+                "result",
+                "profilescore",
+                "profilescore",
+                "vert._meters",
+                "startlist_quality_score",
+            ],
         )
 
     def run_feature_extract(self):
         self.race_df = self._add_rider_details(self.race_df)
         self.race_df = self._extract_date_time_to_features(self.race_df)
-        self.race_df = self._calculate_time_since_last_race(self.race_df)
-        self.race_df = self._calculate_racedays_this_year(self.race_df)
-        self.race_df = self._calculate_profilescore_vert_ratio(self.race_df)
-        self.race_df = self._calculate_best_result_this_year(self.race_df)
-        self.race_df = self._calculate_performance_similar_races(self.race_df)
+        self.race_df["time_since_last_race"] = self._calculate_time_since_last_race(
+            self.race_df
+        )
+        self.race_df["race_days_this_year"] = self._calculate_racedays_this_year(
+            self.race_df
+        )
+        self.race_df[
+            "profile_score_vert_ratio"
+        ] = self._calculate_profilescore_vert_ratio(
+            self.race_df["profilescore"], self.race_df["vert._meters"]
+        )
+        self.race_df["best_result_this_year"] = self._calculate_best_result_this_year(
+            self.race_df
+        )
+        self.race_df[
+            "best_result_similar_races"
+        ] = self._calculate_performance_similar_races(self.race_df)
+
+    def process_to_file(self):
+        self.run_parsers()
+        self.run_feature_extract()
+        self.race_df.to_csv(self.rider_path + 'processed_race_data.csv', index=False)
+
