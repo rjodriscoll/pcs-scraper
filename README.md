@@ -51,8 +51,10 @@ Use the ``scrape_year(years)`` method to scrape data for a specific year or list
 ## Preprocessing the file
 
 To perform the preprocessing and output the file to a csv for a rider simply use the Processor from processing.process
- ``` process = Processor("../data/thomas-pidcock/")```.
- ``` process.process_to_file()```.
+ ``` python
+ process = Processor("../data/thomas-pidcock/")
+ process.process_to_file()
+ ```
 
 
 #
