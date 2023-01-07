@@ -55,7 +55,7 @@ Import the Scraper class by adding from ``from scrape import Scraper`` to the to
 
 Create an instance of the Scraper class by calling `` Scraper(rider_url)``, where rider_url is the base URL of the rider's page on procyclingstats.com. For example, to scrape data for Geraint Thomas, you would use ``s = Scraper('https://www.procyclingstats.com/rider/geraint-thomas')``.
 
-Use the ``scrape_homepage()`` method to scrape data from the rider's homepage and save it as a parquet file in the ../data/<name>/ directory, where <name> is the name of the rider.
+Use the ``scrape_homepage()`` method to scrape data from the rider's homepage and save it as a parquet file in the ../data/name/ directory, where name is the name of the rider.
 
 Use the ``scrape_year(years)`` method to scrape data for a specific year or list of years and save it as a parquet file in the ../data/<name>/ directory. The years argument should be a string or a list of strings, and should be in the format 'YYYY'. For example, to scrape data for the years 2020 and 2021, you would use ``scrape_year(['2020', '2021'])``.
 
