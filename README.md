@@ -47,7 +47,12 @@ Use the ``scrape_homepage()`` method to scrape data from the rider's homepage an
 
 Use the ``scrape_year(years)`` method to scrape data for a specific year or list of years and save it as a parquet file in the ../data/<name>/ directory. The years argument should be a string or a list of strings, and should be in the format 'YYYY'. For example, to scrape data for the years 2020 and 2021, you would use ``scrape_year(['2020', '2021'])``.
 
-# Coming soon 
 
-* unit tests 
-* preprocessor, which can be used for detailed anaysis of each rider and easy to use excel files for analysis/dashboarding
+## Preprocessing the file
+
+To perform the preprocessing and output the file to a csv for a rider simply use the Processor from processing.process
+ ``` process = Processor("../data/thomas-pidcock/")```.
+ ``` process.process_to_file()```.
+
+
+#
