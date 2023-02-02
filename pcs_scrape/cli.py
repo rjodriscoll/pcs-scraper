@@ -36,7 +36,6 @@ if args.startlist:
 with tqdm(total=len(riders) * len(years), desc="Scraping data") as pbar:
     for rider in set(riders):
         for year in set(years):
-            print("Scraping data for rider: " + rider + " " + year)
 
             s = Scraper(rider_url=f"https://www.procyclingstats.com/rider/{str(rider)}")
             try:
