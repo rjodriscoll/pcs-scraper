@@ -30,7 +30,10 @@ class Scraper:
         if isinstance(years, str):
             years = [years]
         for year in years:
-            race_df, stage_df = self.scrape_rider_year(year)
+            try:
+                race_df, stage_df = self.scrape_rider_year(year)
+            except:
+                continue
             if len(race_df) > 0:
                 race_df.to_parquet(
                     f"{self.output_location}/{self.name}/{year}_races.parquet"
