@@ -47,22 +47,35 @@ class Scraper:
     def get_rider_homepage_stats(self) -> pd.DataFrame:
         rider_dict = {}
         soup = get_soup(self.url)
-        rider_dict["name"] = title_fmt(soup.find("title").text)
-        rider_dict["team"] = string_fmt(soup.find("span", class_="red").text)
+        try:
+            rider_dict["name"] = title_fmt(soup.find("title").text)
+        except:
+            rider_dict['name'] = None
+        try:  
+            rider_dict["team"] = string_fmt(soup.find("span", class_="red").text)
+        except:
+            rider_dict["team"] = None
+
         info = soup.find("div", {"class": "rdr-info-cont"})
+        
         list_birthdate = info.contents[1:4]
-        rider_dict["dob"] = dt.datetime.strptime(
-            list_birthdate[0] + list_birthdate[2][:-5], " %d %B %Y"
-        ).date()
-        rider_dict["country"] = string_fmt(
-            info.find("a", class_="black")
-            .text.encode("latin-1", "ignore")
-            .decode("utf-8", "ignore")
-        )
+        try:
+            rider_dict["dob"] = dt.datetime.strptime(
+                list_birthdate[0] + list_birthdate[2][:-5], " %d %B %Y"
+            ).date()
+        except:
+            rider_dict['dob'] = None
+        try:
+            rider_dict["country"] = string_fmt(
+                info.find("a", class_="black")
+                .text.encode("latin-1", "ignore")
+                .decode("utf-8", "ignore")
+            )
+        except:
+            rider_dict['country'] = None
         
         ht = info.find(text="Height:")
         wt = info.find(text="Weight:")
-
         rider_dict["height"] = float(ht.next.split()[0]) if ht else np.nan
         rider_dict["weight"] = float(wt.next.split()[0]) if wt else np.nan
 
