@@ -24,8 +24,10 @@ args = parser.parse_args()
 
 years = args.years
 riders = [args.riders] if args.riders else []
+teams = [args.teams] if args.teams else []
+
 if args.teams:
-    for team in args.teams:
+    for team in teams:
         riders.extend(get_team_riders(team))
 
 if args.startlist:

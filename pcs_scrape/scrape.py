@@ -2,6 +2,7 @@ import pandas as pd
 import datetime as dt
 import os
 import re
+import numpy as np
 from utils import string_fmt, title_fmt, get_soup
 
 
@@ -58,8 +59,12 @@ class Scraper:
             .text.encode("latin-1", "ignore")
             .decode("utf-8", "ignore")
         )
-        rider_dict["height"] = float(info.find(text="Height:").next.split()[0])
-        rider_dict["weight"] = float(info.find(text="Weight:").next.split()[0])
+        
+        ht = info.find(text="Height:")
+        wt = info.find(text="Weight:")
+
+        rider_dict["height"] = float(ht.next.split()[0]) if ht else np.nan
+        rider_dict["weight"] = float(wt.next.split()[0]) if wt else np.nan
 
         points = soup.find_all("div", {"class": "pnt"})
         ranks = soup.find_all("div", {"class": "rnk"})
