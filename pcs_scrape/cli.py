@@ -27,7 +27,7 @@ years = args.years
 riders = [args.riders] if args.riders else []
 teams = [args.teams] if args.teams else []
 
-riders = [r for r in riders if isinstance(r, str) and r != "None"]
+riders = [r for r in riders if isinstance(r, str) and "-" in r]
 teams = [t for t in teams if isinstance(t, str) and t != "None"]
 
 
