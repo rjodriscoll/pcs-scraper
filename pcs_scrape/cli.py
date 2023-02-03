@@ -3,6 +3,7 @@ from tqdm import tqdm
 from scrape import Scraper
 from utils import get_team_riders, get_riders_from_start_list
 import warnings
+import os
 
 parser = argparse.ArgumentParser()
 
@@ -26,9 +27,12 @@ years = args.years
 riders = [args.riders] if args.riders else []
 teams = [args.teams] if args.teams else []
 
-if args.teams:
-    for team in teams:
-        riders.extend(get_team_riders(team))
+riders = [r for r in riders if isinstance(r, str) and r != "None"]
+teams = [t for t in teams if isinstance(t, str) and t != "None"]
+
+
+for team in teams:
+    riders.extend(get_team_riders(team))
 
 if args.startlist:
     riders.extend(get_riders_from_start_list(args.startlist))
@@ -36,18 +40,24 @@ if args.startlist:
 with tqdm(total=len(riders) * len(years), desc="Scraping data") as pbar:
     for rider in set(riders):
         for year in set(years):
+            if not os.path.exists(
+                f"../data/{rider}/{year}_races.parquet"
+            ) and not os.path.exists(f"../data/{rider}/{year}_stage_races.parquet"):
+                s = Scraper(
+                    rider_url=f"https://www.procyclingstats.com/rider/{str(rider)}",
+                    output_location="../data",
+                )
 
-            s = Scraper(rider_url=f"https://www.procyclingstats.com/rider/{str(rider)}")
-            try:
-                s.scrape_homepage()
-            except RuntimeError as e:
-                warnings.warn(
-                    f"could not retrieve data from {s.url}, the following status code was returned: {str(e.args[1])}"
-                )
-            try:
-                s.scrape_year([str(year)])
-            except RuntimeError as e:
-                warnings.warn(
-                    f"could not retrieve data for {str(rider)} {str(year)}, the following status code was returned: {str(e.args[1])}"
-                )
-            pbar.update(1)
+                try:
+                    s.scrape_homepage()
+                except RuntimeError as e:
+                    warnings.warn(
+                        f"could not retrieve data from {s.url}, the following status code was returned: {str(e.args[1])}"
+                    )
+                try:
+                    s.scrape_year([str(year)])
+                except RuntimeError as e:
+                    warnings.warn(
+                        f"could not retrieve data for {str(rider)} {str(year)}, the following status code was returned: {str(e.args[1])}"
+                    )
+                pbar.update(1)

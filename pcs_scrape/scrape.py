@@ -57,9 +57,9 @@ class Scraper:
             rider_dict["team"] = None
 
         info = soup.find("div", {"class": "rdr-info-cont"})
-        
-        list_birthdate = info.contents[1:4]
+    
         try:
+            list_birthdate = info.contents[1:4]
             rider_dict["dob"] = dt.datetime.strptime(
                 list_birthdate[0] + list_birthdate[2][:-5], " %d %B %Y"
             ).date()
@@ -74,11 +74,15 @@ class Scraper:
         except:
             rider_dict['country'] = None
         
-        ht = info.find(text="Height:")
-        wt = info.find(text="Weight:")
-        rider_dict["height"] = float(ht.next.split()[0]) if ht else np.nan
-        rider_dict["weight"] = float(wt.next.split()[0]) if wt else np.nan
-
+        try:
+            rider_dict["height"] = float( info.find(text="Height:").next.split()[0]) if ht else np.nan
+        except:
+            rider_dict['height'] = np.nan
+        try:
+            rider_dict["weight"] = float( info.find(text="Weight:").next.split()[0]) if wt else np.nan
+        except:
+            rider_dict['weight'] = np.nan
+            
         points = soup.find_all("div", {"class": "pnt"})
         ranks = soup.find_all("div", {"class": "rnk"})
         titles_pnts = soup.find_all("div", {"class": "title"})[0 : len(points)]
