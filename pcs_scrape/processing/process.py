@@ -5,7 +5,6 @@ import os
 import re
 
 
-
 class Processor:
     def __init__(self, rider_path: str):
         self.rider_path = rider_path
@@ -39,17 +38,19 @@ class Processor:
 
     @staticmethod
     def _parse_distance(column: pd.Series) -> pd.Series:
-        return pd.to_numeric(column.str.replace("_km", ""))
+        return pd.to_numeric(column.str.replace("_km", ""), errors ='coerce')
 
     @staticmethod
     def _parse_speed(column: pd.Series) -> pd.Series:
-        return pd.to_numeric(column.str.replace("_km/h", ""))
+        return pd.to_numeric(column.str.replace("_km/h", ""), errors ='coerce')
 
     @staticmethod
     def _parse_stage_number(column: pd.Series) -> pd.Series:
         def _extract_stage(string):
             if string.startswith("stage"):
-                return int(string.split("_")[1])
+
+                stg = string.split("_")[1]
+                return int("".join(filter(str.isdigit, stg)))
             else:
                 return None
 
@@ -58,14 +59,17 @@ class Processor:
     @staticmethod
     def _parse_result(column: pd.Series) -> pd.Series:
         return pd.to_numeric(
-            column.replace({"DNF": np.nan, "DNS": np.nan}), downcast="integer"
+            column.replace({"DNF": np.nan, "DNS": np.nan, "DS": np.nan, "DF": np.nan}), downcast="integer", errors='coerce'
         )
 
     @staticmethod
     def _parse_start_time(column: pd.Series) -> pd.Series:
         def _parse_start_time(val):
-            time = pd.to_datetime(val[0:5], format="%H:%M")
-            return time.hour
+            try:
+                time = pd.to_datetime(val[0:5], format="%H:%M").hour
+            except:
+                time = 9
+            return time
 
         return column.apply(_parse_start_time)
 
@@ -103,9 +107,8 @@ class Processor:
     @staticmethod
     def _calculate_time_since_last_race(df: pd.DataFrame) -> pd.Series:
         df = df.sort_values("date", ascending=True)
-        ser= df["date"] - df["date"].shift(1)
+        ser = df["date"] - df["date"].shift(1)
         return ser.dt.days
-
 
     @staticmethod
     def _calculate_racedays_this_year(df: pd.DataFrame) -> pd.Series:
@@ -210,6 +213,4 @@ class Processor:
     def process_to_file(self):
         self.run_parsers()
         self.run_feature_extract()
-        self.race_df.to_csv(self.rider_path + 'processed_race_data.csv', index=False)
-
-
+        self.race_df.to_csv(self.rider_path + "processed_race_data.csv", index=False)
