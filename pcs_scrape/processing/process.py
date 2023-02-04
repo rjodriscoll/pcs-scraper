@@ -89,18 +89,21 @@ class Processor:
     @staticmethod
     def _parse_winning_method(column: pd.Series) -> pd.Series:
         def _parse_method(event):
-            if "solo" in event:
-                return "solo"
-            elif "small_group" in event:
-                return "small_sprint"
-            elif "large_group" in event:
-                return "large_sprint"
-            elif "sprint_a_deux" in event:
-                return "sprint_a_deux"
-            elif "time_trial" in event:
-                return "time_trial"
+            if event:
+                if "solo" in event:
+                    return "solo"
+                elif "small_group" in event:
+                    return "small_sprint"
+                elif "large_group" in event:
+                    return "large_sprint"
+                elif "sprint_a_deux" in event:
+                    return "sprint_a_deux"
+                elif "time_trial" in event:
+                    return "time_trial"
+                else:
+                    return event
             else:
-                return event
+                return None
 
         return column.apply(_parse_method)
 
